@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Configuration;
 
 using Emgu.CV;
 using Emgu.CV.Structure;
@@ -17,19 +18,24 @@ namespace CameraCapture
     public partial class CameraCapture : Form
     {
         //declaring global variables
-        //private Capture capture;        //takes images from camera as image frames
         private List<Capture> captures = new List<Capture>();
         private int cameras = 3;
         private bool captureInProgress;
         private bool saveToFile;
 
         private string saveToPath = @"C:\tmp\";
-        private int frameWidth = 1280;
-        private int frameHeight = 720;
+        private int frameWidth = 640;
+        private int frameHeight = 480;
         private int fps = 1;
 
         public CameraCapture()
         {
+            //initialize user settings
+            saveToPath = Properties.Settings.Default.OutputPath;
+            frameWidth = Properties.Settings.Default.FrameSize.Width;
+            frameHeight = Properties.Settings.Default.FrameSize.Height;
+            fps = Properties.Settings.Default.Fps;
+
             InitializeComponent();
         }
         //------------------------------------------------------------------------------//
@@ -44,13 +50,26 @@ namespace CameraCapture
 
             foreach (var capture in captures)
             {
-                Mat ImageFrame = capture.QueryFrame();
-                if (cameraIndex == 0) CamImageBox0.Image = ImageFrame;
-                if (cameraIndex == 1) CamImageBox1.Image = ImageFrame;
-                if (cameraIndex == 2) CamImageBox2.Image = ImageFrame;
-                if (saveToFile)
+                Mat imageFrame = capture.QueryFrame();
+                if (imageFrame != null)
                 {
-                    ImageFrame.Save(String.Concat(saveToPath, timeStamp, "_cam_", cameraIndex.ToString(), ".jpg"));
+                    if (saveToFile)
+                    {
+                        imageFrame.Save(String.Concat(saveToPath, timeStamp, "_cam_", cameraIndex.ToString(), ".jpg"));
+                    }
+
+                    Emgu.CV.UI.ImageBox imgBox = null;
+                    if (cameraIndex == 0) imgBox = CamImageBox0;
+                    if (cameraIndex == 1) imgBox = CamImageBox1;
+                    if (cameraIndex == 2) imgBox = CamImageBox2;
+                    if (cameraIndex == 3) imgBox = CamImageBox3;
+
+                    if (imgBox != null)
+                    {
+                        Mat resizedImage = new Mat(imageFrame, new Rectangle(new Point(0,0), imgBox.Size));
+                        CvInvoke.Resize(imageFrame, resizedImage, imgBox.Size);
+                        imgBox.Image = resizedImage;
+                    }
                 }
                 cameraIndex++;
             }
@@ -113,7 +132,7 @@ namespace CameraCapture
         {
             if (captures.Count > 0)
             {
-                foreach(var capture in captures)
+                foreach (var capture in captures)
                 {
                     capture.Dispose();
                 }
@@ -123,6 +142,33 @@ namespace CameraCapture
         private void btnSave_Click(object sender, EventArgs e)
         {
             saveToFile = !saveToFile;
+        }
+
+        private void CameraCapture_Load(object sender, EventArgs e)
+        {
+            System.Windows.Forms.ToolTip btnSaveToolTip = new System.Windows.Forms.ToolTip();
+            btnSaveToolTip.SetToolTip(this.btnSavePath, saveToPath);
+        }
+
+        private void btnClose_Click(object sender, EventArgs e)
+        {
+            Application.Exit();
+        }
+
+        private void btnSavePath_Click(object sender, EventArgs e)
+        {
+            folderBrowserDialog1.Description = "Select path to save images";
+            folderBrowserDialog1.SelectedPath = saveToPath;
+
+            DialogResult dialogresult = folderBrowserDialog1.ShowDialog();
+
+            if (dialogresult == DialogResult.OK && saveToPath != folderBrowserDialog1.SelectedPath)
+            {
+                saveToPath = folderBrowserDialog1.SelectedPath;
+
+                Properties.Settings.Default.OutputPath = saveToPath;
+                Properties.Settings.Default.Save();
+            }
         }
     }
 }
