@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -30,8 +31,11 @@ namespace CameraCapture
 
         public CameraCapture()
         {
+            //Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.PerUserRoamingAndLocal);
+            //Console.WriteLine("Local user config path: {0}", config.FilePath);
+
             //initialize user settings
-            saveToPath = Properties.Settings.Default.OutputPath;
+            saveToPath = Path.GetFullPath(Properties.Settings.Default.OutputPath);
             frameWidth = Properties.Settings.Default.FrameSize.Width;
             frameHeight = Properties.Settings.Default.FrameSize.Height;
             fps = Properties.Settings.Default.Fps;
@@ -55,7 +59,7 @@ namespace CameraCapture
                 {
                     if (saveToFile)
                     {
-                        imageFrame.Save(String.Concat(saveToPath, timeStamp, "_cam_", cameraIndex.ToString(), ".jpg"));
+                        imageFrame.Save(Path.Combine(saveToPath, String.Concat(timeStamp, "_cam_", cameraIndex.ToString(), ".jpg")));
                     }
 
                     Emgu.CV.UI.ImageBox imgBox = null;
@@ -146,6 +150,11 @@ namespace CameraCapture
 
         private void CameraCapture_Load(object sender, EventArgs e)
         {
+            if (!Directory.Exists(saveToPath))
+            {
+                Directory.CreateDirectory(saveToPath);
+            }
+
             System.Windows.Forms.ToolTip btnSaveToolTip = new System.Windows.Forms.ToolTip();
             btnSaveToolTip.SetToolTip(this.btnSavePath, saveToPath);
         }

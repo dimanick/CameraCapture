@@ -25,7 +25,7 @@ namespace CameraCapture.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("c:\\tmp\\")]
+        [global::System.Configuration.DefaultSettingValueAttribute("out")]
         public string OutputPath {
             get {
                 return ((string)(this["OutputPath"]));
